@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
-from babel.numbers import format_currency
 import os
 
 sns.set(style='dark')
@@ -88,14 +87,13 @@ plt.xticks(rotation=45)
 # Show the plot in Streamlit
 st.pyplot(plt)
 
-# Assuming rfm_df is already prepared with columns: User_Type, Recency, Frequency, Monetary
 # Display RFM analysis
 st.header('RFM Analysis')
 rfm_df = pd.DataFrame({
-    'User_Type': ['Casual', 'Registered'],  # Sample user types
-    'Recency': [10, 5],                     # Sample recency values
-    'Frequency': [50, 100],                 # Sample frequency values
-    'Monetary': [2000, 5000]                # Sample monetary values
+    'User_Type': ['Casual', 'Registered'],  
+    'Recency': [10, 5],                     
+    'Frequency': [50, 100],                 
+    'Monetary': [2000, 5000]                
 })
 
 st.write(rfm_df)
@@ -124,4 +122,3 @@ plt.tight_layout()
 
 # Show RFM plots in Streamlit
 st.pyplot(plt)
-    
