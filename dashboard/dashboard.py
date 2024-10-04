@@ -14,42 +14,114 @@ all_df = pd.read_csv(csv_path)
 # Convert 'dteday' to datetime if not already done
 all_df['dteday'] = pd.to_datetime(all_df['dteday'])
 
-# Get min/max dates for the date filter
-min_date = all_df["dteday"].min()
-max_date = all_df["dteday"].max()
-
 # Sidebar filters
 with st.sidebar:
     # Add company logo
     st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png")
 
-    all_years = [-1] + sorted(all_df['yr'].unique().tolist())
-    selected_year = st.selectbox('Select Year (or All Years)', all_years, format_func=lambda x: 'All' if x == -1 else f"201{str(x+1)}")
+    # Select two dates for filtering
+    start_date = st.date_input("Select Start Date", value=pd.to_datetime('2011-01-01'))
+    end_date = st.date_input("Select End Date", value=pd.to_datetime('2012-12-31'))
 
     # Filter by Season or All (-1 for all seasons)
     all_seasons = [-1, 1, 2, 3, 4]  # 1: Spring, 2: Summer, 3: Fall, 4: Winter
     selected_season = st.selectbox('Select Season (or All Seasons)', all_seasons, format_func=lambda x: 'All' if x == -1 else {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}[x])
 
-    # Filter by Weather Situation or All (-1 for all weather situations)
-    all_weather = [-1, 1, 2, 3, 4]  # 1: Clear, 2: Misty, 3: Light Snow/Rain, 4: Heavy Rain/Snow
-    selected_weather = st.selectbox('Select Weather Situation (or All)', all_weather, format_func=lambda x: 'All' if x == -1 else {1: 'Clear', 2: 'Misty', 3: 'Light Snow/Rain', 4: 'Heavy Rain/Snow'}[x])
-
 # Apply filters to the DataFrame
 filtered_df = all_df.copy()
 
-# Filter by selected year (if not 'All')
-if selected_year != -1:
-    filtered_df = filtered_df[filtered_df['yr'] == selected_year]
+# Filter by selected date range
+filtered_df = filtered_df[(filtered_df['dteday'] >= pd.to_datetime(start_date)) & (filtered_df['dteday'] <= pd.to_datetime(end_date))]
 
 # Filter by selected season (if not 'All')
 if selected_season != -1:
     filtered_df = filtered_df[filtered_df['season'] == selected_season]
 
-# Filter by selected weather situation (if not 'All')
-if selected_weather != -1:
-    filtered_df = filtered_df[filtered_df['weathersit'] == selected_weather]
+# Group data by hour and calculate total, casual, and registered rentals
+hourly_data = filtered_df.groupby('hr').agg({
+    'cnt': 'sum',
+    'casual': 'sum',
+    'registered': 'sum'
+}).reset_index()
 
-# Now filtered_df contains the data according to the selected filters.
-st.write(filtered_df)
+# Create the plot for hourly rentals
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=hourly_data, x='hr', y='cnt', label='Total Rentals (cnt)', color='blue')
+sns.lineplot(data=hourly_data, x='hr', y='casual', label='Casual Rentals', color='green')
+sns.lineplot(data=hourly_data, x='hr', y='registered', label='Registered Rentals', color='red')
 
+# Customize the plot
+plt.title('Hourly Bike Rentals (Total, Casual, Registered)')
+plt.xlabel('Hour of Day')
+plt.ylabel('Rentals')
+plt.xticks(range(0, 24))  # Set x-ticks for each hour (0-23)
+plt.grid(True)
+plt.legend()
 
+# Show the plot in Streamlit
+st.pyplot(plt)
+
+# Group by weather situation to calculate total rentals by weather type
+weather_rentals = filtered_df.groupby('weathersit')['cnt'].sum().reset_index()
+
+# Map weather situation codes to labels
+weather_rentals['weathersit'] = weather_rentals['weathersit'].map({
+    1: 'Clear', 
+    2: 'Misty', 
+    3: 'Light Snow/Rain', 
+    4: 'Heavy Rain/Snow'
+})
+
+# Sort the data by total rentals in descending order
+weather_rentals = weather_rentals.sort_values(by='cnt', ascending=False)
+
+# Create a bar plot for total rentals by weather situation
+plt.figure(figsize=(10, 6))
+sns.barplot(data=weather_rentals, x='weathersit', y='cnt', palette='viridis')
+
+# Customize the plot
+plt.title('Total Bike Rentals by Weather Situation', fontsize=16)
+plt.xlabel('Weather Situation', fontsize=14)
+plt.ylabel('Total Rentals', fontsize=14)
+plt.xticks(rotation=45)
+
+# Show the plot in Streamlit
+st.pyplot(plt)
+
+# Assuming rfm_df is already prepared with columns: User_Type, Recency, Frequency, Monetary
+# Display RFM analysis
+st.header('RFM Analysis')
+rfm_df = pd.DataFrame({
+    'User_Type': ['Casual', 'Registered'],  # Sample user types
+    'Recency': [10, 5],                     # Sample recency values
+    'Frequency': [50, 100],                 # Sample frequency values
+    'Monetary': [2000, 5000]                # Sample monetary values
+})
+
+st.write(rfm_df)
+
+plt.figure(figsize=(12, 6))
+
+# Recency
+plt.subplot(1, 3, 1)
+sns.barplot(x='User_Type', y='Recency', data=rfm_df)
+plt.title('Recency by User Type')
+plt.ylabel('Average Recency (Days)')
+
+# Frequency
+plt.subplot(1, 3, 2)
+sns.barplot(x='User_Type', y='Frequency', data=rfm_df)
+plt.title('Frequency by User Type')
+plt.ylabel('Total Frequency')
+
+# Monetary
+plt.subplot(1, 3, 3)
+sns.barplot(x='User_Type', y='Monetary', data=rfm_df)
+plt.title('Monetary (Total Rentals) by User Type')
+plt.ylabel('Total Rentals')
+
+plt.tight_layout()
+
+# Show RFM plots in Streamlit
+st.pyplot(plt)
+    
