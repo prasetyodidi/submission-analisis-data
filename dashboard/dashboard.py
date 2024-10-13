@@ -87,38 +87,79 @@ plt.xticks(rotation=45)
 # Show the plot in Streamlit
 st.pyplot(plt)
 
-# Display RFM analysis
-st.header('RFM Analysis')
-rfm_df = pd.DataFrame({
-    'User_Type': ['Casual', 'Registered'],  
-    'Recency': [10, 5],                     
-    'Frequency': [50, 100],                 
-    'Monetary': [2000, 5000]                
-})
+# Display Manual Grouping and Binning
+st.header('Manual Grouping and Binning')
 
-st.write(rfm_df)
+# Define time bins and labels
+time_bins = [0, 6, 12, 18, 24]  # Bins for Morning, Afternoon, Evening, Night
+time_labels = ['Night (12 AM - 6 AM)', 'Morning (6 AM - 12 PM)', 'Afternoon (12 PM - 6 PM)', 'Evening (6 PM - 12 AM)']
 
-plt.figure(figsize=(12, 6))
+# Create a new column 'time_of_day' based on 'hr'
+filtered_df['time_of_day'] = pd.cut(filtered_df['hr'], bins=time_bins, labels=time_labels, right=False)
 
-# Recency
-plt.subplot(1, 3, 1)
-sns.barplot(x='User_Type', y='Recency', data=rfm_df)
-plt.title('Recency by User Type')
-plt.ylabel('Average Recency (Days)')
+# Group by 'time_of_day' and calculate the mean of 'casual' and 'registered' rentals
+grouped_data = filtered_df.groupby('time_of_day')[['casual', 'registered']].mean().reset_index()
 
-# Frequency
-plt.subplot(1, 3, 2)
-sns.barplot(x='User_Type', y='Frequency', data=rfm_df)
-plt.title('Frequency by User Type')
-plt.ylabel('Total Frequency')
+# Output the result
+print(grouped_data)
 
-# Monetary
-plt.subplot(1, 3, 3)
-sns.barplot(x='User_Type', y='Monetary', data=rfm_df)
-plt.title('Monetary (Total Rentals) by User Type')
-plt.ylabel('Total Rentals')
+# Plot casual and registered users by time of day
+grouped_data.set_index('time_of_day').plot(kind='bar', figsize=(10, 6), stacked=False)
+plt.title('Average Casual vs Registered Users by Time of Day')
+plt.ylabel('Average Number of Users')
+plt.xlabel('Time of Day')
+plt.xticks(rotation=45)
+plt.show()
 
-plt.tight_layout()
-
-# Show RFM plots in Streamlit
 st.pyplot(plt)
+
+# Define temperature bins and labels (normalized temperature divided by max 41°C)
+temp_bins = [0.0, 0.3, 0.6, 0.9, 1.0]  # Corresponding to Cold, Moderate, Warm, Hot
+temp_labels = ['Cold (0°C - 12.3°C)', 'Moderate (12.3°C - 24.6°C)', 'Warm (24.6°C - 36.9°C)', 'Hot (36.9°C - 41°C)']
+
+# Create a new column 'temp_range' based on 'temp' bins
+filtered_df['temp_range'] = pd.cut(filtered_df['temp'], bins=temp_bins, labels=temp_labels, right=False)
+
+# Group by 'temp_range' and calculate the mean of 'cnt' (total bike rentals)
+grouped_data = filtered_df.groupby('temp_range')['cnt'].mean().reset_index()
+
+# Output the result
+print(grouped_data)
+
+# Plot the results using matplotlib for visual representation
+plt.figure(figsize=(10, 6))
+plt.bar(grouped_data['temp_range'], grouped_data['cnt'], color='skyblue')
+plt.title('Average Bike Rentals by Temperature Range')
+plt.ylabel('Average Total Rentals (cnt)')
+plt.xlabel('Temperature Range')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+st.pyplot(plt)
+
+
+# Define season labels
+season_labels = ['Spring', 'Summer', 'Fall', 'Winter']
+
+# Create a new column 'season_label' based on 'season' values
+filtered_df['season_label'] = filtered_df['season'].map({1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'})
+
+# Group by 'season_label' and calculate the mean of 'casual' and 'registered' rentals
+grouped_data = filtered_df.groupby('season_label')[['casual', 'registered']].mean().reset_index()
+
+# Output the result
+print(grouped_data)
+
+# Plot the results using matplotlib for visual representation
+grouped_data.set_index('season_label').plot(kind='bar', figsize=(10, 6), stacked=False, color=['skyblue', 'orange'])
+plt.title('Average Casual vs Registered Users by Season (Hourly Data)')
+plt.ylabel('Average Number of Users')
+plt.xlabel('Season')
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+st.pyplot(plt)
+
+
